@@ -2,48 +2,53 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ZV - ВКонтакте Style</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZV - Социальная сеть</title>
     <style>
         :root {
             --bg: #ebedf0; --card: #ffffff; --text: #000000;
-            --accent: #0077ff; --btn-hover: #0066dd; --secondary-text: #818c99;
+            --accent: #0077ff; --secondary-text: #818c99; --border: rgba(0,0,0,0.1);
         }
-        /* Темная тема */
         body.dark {
             --bg: #19191a; --card: #222222; --text: #e1e3e6;
-            --secondary-text: #76787a;
+            --secondary-text: #76787a; --border: rgba(255,255,255,0.1);
         }
 
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; transition: 0.3s; }
-        .nav { background: var(--card); padding: 10px; display: flex; justify-content: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 0 rgba(0,0,0,0.1); }
-        .header-content { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, system-ui, sans-serif; margin: 0; transition: 0.2s; }
+        .nav { background: var(--card); padding: 10px; display: flex; justify-content: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
+        .header-content { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
         
-        .container { max-width: 600px; margin: 20px auto; padding: 0 10px; }
-        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .container { max-width: 600px; margin: 15px auto; padding: 0 10px; }
+        .card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         
         .hidden { display: none !important; }
-        input, textarea { width: 100%; background: var(--bg); border: 1px solid rgba(0,0,0,0.1); color: var(--text); padding: 10px; border-radius: 8px; box-sizing: border-box; }
-        .btn { cursor: pointer; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 500; }
+        input, textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 8px; box-sizing: border-box; margin-bottom: 10px; }
+        
+        .btn { cursor: pointer; border: none; border-radius: 8px; padding: 10px 16px; font-weight: 500; transition: 0.2s; }
         .btn-vk { background: var(--accent); color: white; }
+        .btn-vk:hover { opacity: 0.9; }
+        .btn-danger { background: #ff4d4d; color: white; }
+
+        .profile-header { display: flex; gap: 20px; align-items: center; margin-bottom: 20px; }
+        .avatar-lg { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: #555; }
+        .avatar-sm { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; }
         
-        /* Профиль */
-        .profile-header { display: flex; gap: 20px; align-items: center; }
-        .avatar-lg { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; }
+        .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .like-btn { background: var(--bg); color: var(--text); display: flex; align-items: center; gap: 6px; padding: 6px 12px; }
+        .like-btn.active { color: #ff3347; background: rgba(255, 51, 71, 0.1); }
         
-        /* Лайки */
-        .like-btn { background: #f0f2f5; color: #444; display: flex; align-items: center; gap: 5px; font-size: 14px; }
-        body.dark .like-btn { background: #333; color: #ccc; }
-        .like-btn.active { color: #ff3347; background: #ffebed; }
-        
-        .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .avatar-sm { width: 40px; height: 40px; border-radius: 50%; }
+        label { display: block; margin-bottom: 5px; font-size: 14px; color: var(--secondary-text); }
+        hr { border: 0; border-top: 1px solid var(--border); margin: 15px 0; }
     </style>
 </head>
-<body class="dark"> <div class="nav">
+<body class="dark">
+
+    <div class="nav">
         <div class="header-content">
-            <b style="font-size: 20px;">ZV</b>
-            <div>
-                <button onclick="document.body.classList.toggle('dark')" class="btn">🌓 Тема</button>
+            <b style="font-size: 22px; cursor: pointer;" onclick="window.showPage('feedPage')">ZV</b>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="document.body.classList.toggle('dark')" class="btn">🌓</button>
+                <button id="toProfileBtn" class="btn btn-vk hidden" onclick="window.showPage('profilePage')">Профиль</button>
                 <button id="logoutBtn" class="btn hidden">Выйти</button>
             </div>
         </div>
@@ -51,29 +56,49 @@
 
     <div class="container">
         <div id="authBlock" class="card">
-            <h3>Вход в ZV</h3>
-            <input type="email" id="email" placeholder="Email"><br><br>
-            <input type="password" id="password" placeholder="Пароль"><br><br>
+            <h3 style="margin-top:0;">Вход в ZV</h3>
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Пароль">
             <button id="loginBtn" class="btn btn-vk">Войти</button>
             <button id="regBtn" class="btn">Регистрация</button>
         </div>
 
-        <div id="profileBlock" class="card hidden">
-            <div class="profile-header">
-                <img id="myAvatar" class="avatar-lg" src="https://via.placeholder.com/100">
-                <div>
-                    <h2 id="myName" style="margin:0;">Загрузка...</h2>
-                    <input type="file" id="uploadAvatar" style="margin-top:10px; font-size:12px;">
-                </div>
+        <div id="feedPage" class="page">
+            <div id="createPostBlock" class="card hidden">
+                <textarea id="postText" placeholder="Что у вас нового?"></textarea>
+                <button id="submitBtn" class="btn btn-vk" style="width:100%;">Опубликовать</button>
             </div>
+            <div id="feed"></div>
         </div>
 
-        <div id="createPostBlock" class="card hidden">
-            <textarea id="postText" placeholder="Что у вас нового?"></textarea>
-            <button id="submitBtn" class="btn btn-vk" style="margin-top:10px; width:100%;">Опубликовать</button>
-        </div>
+        <div id="profilePage" class="page hidden">
+            <div class="card">
+                <div class="profile-header">
+                    <img id="myAvatar" class="avatar-lg" src="">
+                    <div>
+                        <h2 id="myNameDisplay" style="margin:0;">Никнейм</h2>
+                        <small id="myEmailDisplay" style="color:var(--secondary-text)"></small>
+                    </div>
+                </div>
+                <hr>
+                <h4>Настройки</h4>
+                <label>Изменить ник:</label>
+                <input type="text" id="newNick" placeholder="Новое имя">
+                <button id="saveNickBtn" class="btn btn-vk">Сохранить ник</button>
+                
+                <br><br>
+                <label>Изменить пароль:</label>
+                <input type="password" id="newPass" placeholder="Минимум 6 символов">
+                <button id="savePassBtn" class="btn btn-danger">Обновить пароль</button>
+                
+                <br><br>
+                <label>Фото профиля:</label>
+                <input type="file" id="uploadAvatar" accept="image/*">
+            </div>
 
-        <div id="feed"></div>
+            <h3 style="padding-left:10px;">Мои посты</h3>
+            <div id="myPosts"></div>
+        </div>
     </div>
 
     <script type="module" src="app.js"></script>
