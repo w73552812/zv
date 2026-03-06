@@ -2,31 +2,64 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZV - Социальная сеть</title>
+  <title>ZV - Social Network</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-    .container { max-width: 600px; margin: 0 auto; }
-    .create-post { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    textarea { width: 100%; height: 80px; border: 1px solid #ccc; border-radius: 5px; padding: 10px; box-sizing: border-box; resize: none; margin-bottom: 10px; }
-    button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #0056b3; }
-    .post { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    .post img, .post video { max-width: 100%; border-radius: 5px; margin-top: 10px; }
-    .post-actions { margin-top: 15px; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; align-items: center; }
+    .nav { width: 100%; background: #fff; padding: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-around; position: sticky; top: 0; z-index: 100; }
+    .container { max-width: 600px; width: 100%; padding: 20px; }
+    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    
+    /* Стили профиля */
+    .profile-info { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
+    .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: #ddd; }
+    
+    /* Стили постов */
+    textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px; resize: none; }
+    .post-media { width: 100%; border-radius: 8px; margin-top: 10px; }
+    .btn { cursor: pointer; border: none; border-radius: 5px; padding: 8px 12px; transition: 0.2s; }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-danger { background: #ff4d4d; color: white; }
+    .btn-action { background: #e4e6eb; color: #050505; margin-right: 5px; }
+
+    /* Комментарии */
+    .comment-section { margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; font-size: 0.9em; }
+    .comment { margin-bottom: 8px; padding-left: 10px; border-left: 2px solid #ddd; }
+    .reply { margin-left: 20px; border-left: 2px solid #007bff; }
+    
+    .hidden { display: none; }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <h1 style="text-align: center;">Лента ZV</h1>
+  <div class="nav">
+    <div id="userHeader">Загрузка...</div>
+    <button id="logoutBtn" class="btn hidden">Выйти</button>
+  </div>
 
-    <div class="create-post">
-      <form id="postForm">
-        <textarea id="postText" placeholder="Что у вас нового?"></textarea>
-        <input type="file" id="postFile" accept="image/*,video/*" style="margin-bottom: 10px; display: block;">
-        <button type="submit" id="submitBtn">Опубликовать</button>
-      </form>
+  <div class="container">
+    <div id="authBlock" class="card">
+      <h3>Вход в ZV</h3>
+      <input type="email" id="email" placeholder="Email" style="width: 90%; margin-bottom: 10px; padding: 8px;">
+      <input type="password" id="password" placeholder="Пароль" style="width: 90%; margin-bottom: 10px; padding: 8px;">
+      <br>
+      <button onclick="window.authAction('login')" class="btn btn-primary">Войти</button>
+      <button onclick="window.authAction('register')" class="btn">Регистрация</button>
+    </div>
+
+    <div id="profileBlock" class="card hidden">
+      <div class="profile-info">
+        <img id="myAvatar" class="avatar" src="">
+        <div>
+          <h4 id="myName">Имя пользователя</h4>
+          <input type="file" id="uploadAvatar" accept="image/*" style="font-size: 12px;">
+        </div>
+      </div>
+    </div>
+
+    <div id="createPostBlock" class="card hidden">
+      <textarea id="postText" placeholder="Что нового?"></textarea>
+      <input type="file" id="postFile" accept="image/*,video/*" style="margin: 10px 0;">
+      <button id="submitBtn" class="btn btn-primary">Опубликовать</button>
     </div>
 
     <div id="feed"></div>
