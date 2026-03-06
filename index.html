@@ -42,9 +42,11 @@
       <input type="email" id="email" placeholder="Email" style="width: 90%; margin-bottom: 10px; padding: 8px;">
       <input type="password" id="password" placeholder="Пароль" style="width: 90%; margin-bottom: 10px; padding: 8px;">
       <br>
-      <button onclick="window.authAction('login')" class="btn btn-primary">Войти</button>
-      <button onclick="window.authAction('register')" class="btn">Регистрация</button>
-    </div>
+    <button onclick="window.authAction('login')" class="btn btn-primary">Войти</button>
+    <button onclick="window.authAction('register')" class="btn">Регистрация</button>
+
+    <button id="logoutBtn" onclick="window.logout()" class="btn hidden">Выйти</button>
+        </div>
 
     <div id="profileBlock" class="card hidden">
       <div class="profile-info">
