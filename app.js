@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, arrayUnion, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
 const firebaseConfig = {
@@ -17,58 +17,103 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// --- 1. АВТОРИЗАЦИЯ И ПРОФИЛЬ ---
-onAuthStateChanged(auth, (user) => {
-  const authBlock = document.getElementById('authBlock');
-  const createPostBlock = document.getElementById('createPostBlock');
-  const profileBlock = document.getElementById('profileBlock');
-  const logoutBtn = document.getElementById('logoutBtn');
-
-  if (user) {
-    authBlock.classList.add('hidden');
-    createPostBlock.classList.remove('hidden');
-    profileBlock.classList.remove('hidden');
-    logoutBtn.classList.remove('hidden');
-    
-    document.getElementById('userHeader').innerText = `Привет, ${user.displayName || user.email}`;
-    document.getElementById('myName').innerText = user.displayName || "Без имени";
-    document.getElementById('myAvatar').src = user.photoURL || "https://via.placeholder.com/50";
-  } else {
-    authBlock.classList.remove('hidden');
-    createPostBlock.classList.add('hidden');
-    profileBlock.classList.add('hidden');
-    logoutBtn.classList.add('hidden');
-    document.getElementById('userHeader').innerText = "Войдите в ZV";
-  }
-});
+// --- 1. АВТОРИЗАЦИЯ ---
 
 window.authAction = async (type) => {
   const email = document.getElementById('email').value;
   const pass = document.getElementById('password').value;
+  if(!email || !pass) return alert("Заполните поля!");
+  
   try {
-    if (type === 'register') await createUserWithEmailAndPassword(auth, email, pass);
-    else await signInWithEmailAndPassword(auth, email, pass);
-  } catch (e) { alert(e.message); }
+    if (type === 'register') {
+        await createUserWithEmailAndPassword(auth, email, pass);
+        alert("Регистрация успешна!");
+    } else {
+        await signInWithEmailAndPassword(auth, email, pass);
+    }
+  } catch (e) { alert("Ошибка: " + e.message); }
 };
 
-document.getElementById('logoutBtn').onclick = () => signOut(auth);
+window.logout = () => signOut(auth);
 
-// Загрузка аватара
-document.getElementById('uploadAvatar').onchange = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const fileRef = ref(storage, `avatars/${auth.currentUser.uid}`);
-  await uploadBytes(fileRef, file);
-  const url = await getDownloadURL(fileRef);
-  await updateProfile(auth.currentUser, { photoURL: url });
-  location.reload();
-};
+onAuthStateChanged(auth, (user) => {
+  const elements = ['authBlock', 'createPostBlock', 'profileBlock', 'logoutBtn'];
+  const isUser = !!user;
 
-// --- 2. ЛЕНТА ПОСТОВ (ЛАЙКИ, ДИЗЛАЙКИ, УДАЛЕНИЕ, РЕДАКТИРОВАНИЕ) ---
-const postsQuery = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+  elements.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+        if (id === 'authBlock') isUser ? el.classList.add('hidden') : el.classList.remove('hidden');
+        else isUser ? el.classList.remove('hidden') : el.classList.add('hidden');
+    }
+  });
 
-onSnapshot(postsQuery, (snapshot) => {
+  if (user) {
+    document.getElementById('userHeader').innerText = `ZV: ${user.displayName || user.email}`;
+    document.getElementById('myName').innerText = user.displayName || user.email;
+    document.getElementById('myAvatar').src = user.photoURL || "https://via.placeholder.com/50";
+  }
+});
+
+// --- 2. ПРОФИЛЬ ---
+
+const uploadAvatar = document.getElementById('uploadAvatar');
+if(uploadAvatar) {
+    uploadAvatar.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file || !auth.currentUser) return;
+        const fileRef = ref(storage, `avatars/${auth.currentUser.uid}`);
+        await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(fileRef);
+        await updateProfile(auth.currentUser, { photoURL: url });
+        location.reload();
+    };
+}
+
+// --- 3. ЛЕНТА И ПОСТЫ ---
+
+const submitBtn = document.getElementById('submitBtn');
+if(submitBtn) {
+    submitBtn.onclick = async () => {
+        const text = document.getElementById('postText').value;
+        const file = document.getElementById('postFile').files[0];
+        const user = auth.currentUser;
+        if (!user) return alert("Войдите в систему!");
+
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Публикация...";
+
+        try {
+            let mediaUrl = "", mediaType = "";
+            if (file) {
+                const fRef = ref(storage, `posts/${Date.now()}_${file.name}`);
+                await uploadBytes(fRef, file);
+                mediaUrl = await getDownloadURL(fRef);
+                mediaType = file.type.startsWith('video') ? 'video' : 'image';
+            }
+
+            await addDoc(collection(db, "posts"), {
+                text, mediaUrl, mediaType,
+                authorEmail: user.email,
+                authorName: user.displayName || user.email,
+                authorPhoto: user.photoURL || "",
+                likes: 0, dislikes: 0,
+                comments: [],
+                createdAt: serverTimestamp()
+            });
+            document.getElementById('postText').value = '';
+            document.getElementById('postFile').value = '';
+        } catch (e) { console.error(e); }
+        finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Опубликовать";
+        }
+    };
+}
+
+onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc")), (snapshot) => {
   const feed = document.getElementById('feed');
+  if(!feed) return;
   feed.innerHTML = '';
   
   snapshot.forEach((docSnap) => {
@@ -80,7 +125,7 @@ onSnapshot(postsQuery, (snapshot) => {
     postEl.className = 'card';
     postEl.innerHTML = `
       <div style="display:flex; align-items:center; gap:10px;">
-        <img src="${post.authorPhoto || ''}" class="avatar">
+        <img src="${post.authorPhoto || 'https://via.placeholder.com/50'}" class="avatar">
         <strong>${post.authorName || post.authorEmail}</strong>
       </div>
       <p id="text-${id}">${post.text}</p>
@@ -97,14 +142,9 @@ onSnapshot(postsQuery, (snapshot) => {
 
       <div class="comment-section">
         <div id="comments-${id}">
-          ${(post.comments || []).map(c => `
-            <div class="comment">
-              <b>${c.user}:</b> ${c.text} 
-              <button style="border:none; background:none; color:blue; cursor:pointer;" onclick="window.reply('${id}', '${c.user}')">ответить</button>
-            </div>
-          `).join('')}
+          ${(post.comments || []).map(c => `<div class="comment"><b>${c.user}:</b> ${c.text} <button style="border:none; background:none; color:blue; cursor:pointer;" onclick="window.reply('${id}', '${c.user}')">ответить</button></div>`).join('')}
         </div>
-        <input type="text" id="input-${id}" placeholder="Написать комментарий..." style="width:70%; margin-top:5px;">
+        <input type="text" id="input-${id}" placeholder="Ваш коммент..." style="width:70%; margin-top:5px;">
         <button class="btn btn-primary" onclick="window.addComment('${id}')">></button>
       </div>
     `;
@@ -112,19 +152,19 @@ onSnapshot(postsQuery, (snapshot) => {
   });
 });
 
-// Функции действий
+// Глобальные функции для кнопок
 window.react = async (id, type) => {
-  const ref = doc(db, "posts", id);
-  onSnapshot(ref, async (d) => {
-    const val = (d.data()[type] || 0) + 1;
-    await updateDoc(ref, { [type]: val });
-  }, {onlyOnce: true});
+  const postRef = doc(db, "posts", id);
+  const snap = await getDoc(postRef);
+  const newVal = (snap.data()[type] || 0) + 1;
+  await updateDoc(postRef, { [type]: newVal });
 };
 
-window.deletePost = async (id) => { if(confirm("Удалить?")) await deleteDoc(doc(db, "posts", id)); };
+window.deletePost = async (id) => { if(confirm("Удалить пост?")) await deleteDoc(doc(db, "posts", id)); };
 
 window.editPost = async (id) => {
-  const newText = prompt("Введите новый текст:", document.getElementById(`text-${id}`).innerText);
+  const oldText = document.getElementById(`text-${id}`).innerText;
+  const newText = prompt("Редактировать:", oldText);
   if (newText) await updateDoc(doc(db, "posts", id), { text: newText });
 };
 
@@ -142,33 +182,7 @@ window.addComment = async (id) => {
 };
 
 window.reply = (id, userName) => {
-  document.getElementById(`input-${id}`).value = `${userName}, `;
-  document.getElementById(`input-${id}`).focus();
-};
-
-// --- 3. СОЗДАНИЕ ПОСТА ---
-document.getElementById('submitBtn').onclick = async () => {
-  const text = document.getElementById('postText').value;
-  const file = document.getElementById('postFile').files[0];
-  const user = auth.currentUser;
-  if (!user) return alert("Войдите!");
-
-  let mediaUrl = "", mediaType = "";
-  if (file) {
-    const fRef = ref(storage, `posts/${Date.now()}_${file.name}`);
-    await uploadBytes(fRef, file);
-    mediaUrl = await getDownloadURL(fRef);
-    mediaType = file.type.startsWith('video') ? 'video' : 'image';
-  }
-
-  await addDoc(collection(db, "posts"), {
-    text, mediaUrl, mediaType,
-    authorEmail: user.email,
-    authorName: user.displayName,
-    authorPhoto: user.photoURL,
-    likes: 0, dislikes: 0,
-    comments: [],
-    createdAt: serverTimestamp()
-  });
-  document.getElementById('postText').value = '';
+  const input = document.getElementById(`input-${id}`);
+  input.value = `${userName}, `;
+  input.focus();
 };
